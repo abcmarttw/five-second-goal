@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-<title>五秒 GOAL 挑戰｜長按到 5 秒放開</title>
+<title>三秒 GOAL 挑戰｜長按到 3 秒放開</title>
 <style>
 :root{
   /* 場景色 */
   --grass1:#0f8a3b; --grass2:#0c6f31; --brand:#ffcc00;
   --digit:#ff3b30; --digitGlow:rgba(255,80,60,.55);
 
-  /* 足球軌道設定（你畫紅圈的位置）*/
-  --ball-track-x: 32%;      /* 軌道水平中心（越小越靠左；可調 28%~40%） */
-  --ball-track-bottom: 210px;/* 距底部高度（可調 180~240px，依你畫面） */
+  /* 軌道位置（你的紅圈位置可在這裡調） */
+  --ball-track-x: 32%;        /* 越小越靠左（28%~40%調） */
+  --ball-track-bottom: 210px;  /* 與底部距離（180~240px調） */
 
-  /* 移動節奏 */
-  --ball-speed: 2.0s;       /* 左右來回速度 */
-  --ball-amplitude: 120px;  /* 左右位移幅度（軌道寬度的一半） */
+  /* 軌道節奏 */
+  --ball-speed: 2.0s;         /* 左右來回速度 */
+  --ball-amplitude: 120px;    /* 左右位移幅度（半寬） */
 }
 
 /* 基本樣式 */
@@ -25,8 +25,8 @@ html,body{height:100%;margin:0}
 body{
   background:repeating-linear-gradient(90deg,var(--grass1) 0 14vw,var(--grass2) 14vw 28vw);
   display:flex;align-items:center;justify-content:center;color:#fff;
-  -webkit-tap-highlight-color: transparent;
   font-family:ui-sans-serif,system-ui,-apple-system,"PingFang TC","Noto Sans TC",Arial;
+  -webkit-tap-highlight-color:transparent;
 }
 .card{
   width:min(92vw,720px); padding:24px 20px 32px; border-radius:22px;
@@ -36,31 +36,36 @@ body{
 }
 .logo{ width:clamp(120px,28%,220px); display:block; margin:0 auto 16px; filter:drop-shadow(0 0 4px rgba(0,0,0,.35)); }
 
-/* 球門 & 足球 */
+/* 球門 */
 .stadium{height:170px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; filter:drop-shadow(0 6px 14px rgba(0,0,0,.28))}
 .goal{width:82%; max-width:560px}
 
-.ball{
+/* 足球：父層跑左右、子層負責射門 */
+.ball-track{
   position:absolute;
   left: var(--ball-track-x);
   bottom: var(--ball-track-bottom);
-  transform: translateX(-50%);
   width:78px; height:78px;
+  transform: translateX(-50%);
   animation: ball-move var(--ball-speed) linear infinite alternate;
-  animation-play-state: paused;          /* 長按時才開始跑 */
+  animation-play-state: paused;    /* 長按時才開始跑 */
   will-change: transform;
   pointer-events:none;
 }
-.ball.running{ animation-play-state: running; }
-.ball img{ width:100%; height:100%; object-fit:contain; display:block; }
+.ball-track.running{ animation-play-state: running; }
 
-/* 左右往返（以軌道中心為基準） */
 @keyframes ball-move{
   0%   { transform: translateX(calc(-50% - var(--ball-amplitude))); }
   100% { transform: translateX(calc(-50% + var(--ball-amplitude))); }
 }
 
-/* 計時器（秒:百分秒） */
+.ball-sprite{
+  position:absolute; inset:0;      /* 置中於父層 */
+  transform: translate(0,0);       /* 射門時只動這層 */
+}
+.ball-sprite img{ width:100%; height:100%; object-fit:contain; display:block; }
+
+/* 計時器（秒:百分秒 00:00） */
 .board{
   width:min(88%,520px); margin:10px auto 10px; padding:20px 24px;
   background:linear-gradient(180deg,#0a0a0a,#1a1a1a);
@@ -140,26 +145,29 @@ body{
       </svg>
     </div>
 
-    <!-- 足球：在左側軌道左右移動 -->
-    <div class="ball" id="ball" aria-hidden="true"><img src="soccer.png" alt="soccer ball"/></div>
+    <!-- 足球：父層左右移動；子層用來射門 -->
+    <div class="ball-track" id="ballTrack">
+      <div class="ball-sprite" id="ball"><img src="soccer.png" alt="soccer ball"></div>
+    </div>
 
-    <h1>五秒GOAL挑戰</h1>
-    <p class="sub">玩法：<b>按住</b>下方按鈕開始計時，<b>在 5 秒</b>時<b>放開</b>就進球！</p>
+    <h1>三秒GOAL挑戰</h1>
+    <p class="sub">玩法：<b>按住</b>按鈕開始計時，<b>在 3 秒</b>時<b>放開</b>就進球！</p>
 
     <div class="board"><div id="timer" class="digits">00:00</div></div>
 
-    <div class="actions"><button class="btn" id="holdBtn" aria-label="按住開始，5 秒放開">按住開始，放開射門</button></div>
+    <div class="actions"><button class="btn" id="holdBtn" aria-label="按住開始，3 秒放開">按住開始，放開射門</button></div>
     <div class="result" id="result"></div>
   </div>
 
-  <!-- QR 視窗 -->
+  <!-- IG QR -->
   <div class="modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
     <div class="modal-card">
       <h3 id="qrTitle">歡迎追蹤 ABC-MART 官方 IG！</h3>
       <p>掃描下方 QR Code 看更多活動與最新消息 👟</p>
       <a href="https://www.qrcode-tiger.com" target="_blank" rel="noopener">
-        <img class="qr" src="https://qrtiger.com/temp/1761104055255.png" alt="官方 IG QR Code"
-             onerror="this.onerror=null; this.src='qrcode.png';" />
+        <img class="qr" src="https://qrtiger.com/temp/1761104055255.png"
+             alt="官方 IG QR Code"
+             onerror="this.onerror=null; this.src='qrcode.png';">
       </a>
       <button class="close" id="closeQr">我已掃描</button>
     </div>
@@ -169,49 +177,44 @@ body{
 
 <script>
 (() => {
-  const timerEl  = document.getElementById('timer');
-  const holdBtn  = document.getElementById('holdBtn');
-  const resultEl = document.getElementById('result');
-  const ballEl   = document.getElementById('ball');
-  const goalSvg  = document.querySelector('.goal');
-  const flashEl  = document.getElementById('flash');
-  const bannerEl = document.getElementById('banner');
-  const qrModal  = document.getElementById('qrModal');
-  const closeQr  = document.getElementById('closeQr');
-  const goalSound= document.getElementById('goalSound');
+  const TARGET_SEC = 3;                // ✅ 成功條件（整數秒）
+  const timerEl   = document.getElementById('timer');
+  const holdBtn   = document.getElementById('holdBtn');
+  const resultEl  = document.getElementById('result');
+  const ballTrack = document.getElementById('ballTrack'); // 父層：左右移動
+  const ballEl    = document.getElementById('ball');      // 子層：射門
+  const goalSvg   = document.querySelector('.goal');
+  const flashEl   = document.getElementById('flash');
+  const bannerEl  = document.getElementById('banner');
+  const qrModal   = document.getElementById('qrModal');
+  const closeQr   = document.getElementById('closeQr');
+  const goalSound = document.getElementById('goalSound');
 
-  // 防止長按跳出選單
   document.addEventListener('contextmenu', e => e.preventDefault(), {passive:false});
 
-  // 場控（手機順暢）
   const CFG = { QR_DELAY_MS: 2000, CONFETTI_COUNT: 120, CONFETTI_MIN_DUR: 1.6, CONFETTI_MAX_DUR: 2.8 };
 
-  let startTime = 0, ticker = 0, running = false;
+  let startTime = 0, ticker = 0, running = false, kickAnim = null;
 
-  // 秒:百分秒格式
   const pad2 = n => n.toString().padStart(2,'0');
   const fmtSSCC = ms => { const t=ms/1000,s=Math.floor(t),cs=Math.floor((t-s)*100); return `${pad2(s)}:${pad2(cs)}`; };
 
-  // —— 射門動畫：從當前位置飛到球門（拋物線） —— //
+  // 射門（只動子層，不影響父層左右動畫）
   function kickToGoal(){
-    // 取得目前足球中心與球門中上方的目標點
     const ball = ballEl.getBoundingClientRect();
     const goal = goalSvg.getBoundingClientRect();
-
-    const startX = 0, startY = 0; // 以目前 transform 為 0,0 起點
     const dx = (goal.left + goal.width/2) - (ball.left + ball.width/2);
     const dy = (goal.top + goal.height*0.35) - (ball.top + ball.height/2);
 
-    // 使用 Web Animations 疊加在現有 transform 上
-    const anim = ballEl.animate(
+    kickAnim = ballEl.animate(
       [
-        { transform: `translate(0px,0px)` },
-        { transform: `translate(${dx*0.6}px, ${dy-140}px)` }, // 拉出拋物線頂點
+        { transform: 'translate(0,0)' },
+        { transform: `translate(${dx*0.6}px, ${dy-140}px)` },
         { transform: `translate(${dx}px, ${dy}px)` }
       ],
-      { duration: 850, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'forwards', composite: 'add' }
+      { duration: 850, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'forwards' }
     );
-    return anim.finished.catch(()=>{});
+    return kickAnim.finished.finally(()=>{ kickAnim=null; }).catch(()=>{});
   }
 
   function start(){
@@ -221,94 +224,95 @@ body{
     resultEl.textContent = '';
     timerEl.textContent = '00:00';
 
-    // 重置視覺
-    ballEl.getAnimations().forEach(a=>a.cancel());
-    ballEl.style.transform = 'translateX(-50%)'; // 回到軌道基準
-    ballEl.classList.remove('scored','saved');
+    // 只取消上一次射門動畫；不碰父層 CSS 動畫
+    if (kickAnim){ try{ kickAnim.cancel(); }catch(e){} kickAnim=null; }
+    ballEl.getAnimations().forEach(a=>a.cancel()); // 保險：清掉子層舊動畫
+    ballEl.style.transform = 'translate(0,0)';
+
     flashEl.classList.remove('show'); bannerEl.classList.remove('show');
     clearConfetti();
 
     // 開始左右移動
-    ballEl.classList.add('running');
+    ballTrack.classList.add('running');
     holdBtn.classList.add('hold');
     holdBtn.textContent = '放開射門！';
 
-    // 輕量計時（50ms 更新一次）
-    ticker = setInterval(()=>{
-      timerEl.textContent = fmtSSCC(performance.now() - startTime);
-    }, 50);
+    // 輕量計時
+    ticker = setInterval(()=>{ timerEl.textContent = fmtSSCC(performance.now() - startTime); }, 50);
   }
 
   async function stop(byCancel=false){
     if(!running) return;
-    running = false;
+    running=false;
     clearInterval(ticker);
-    const elapsed = (performance.now() - startTime)/1000;
+    const elapsed = (performance.now()-startTime)/1000;
     timerEl.textContent = fmtSSCC(elapsed*1000);
 
-    // 停止左右移動
-    ballEl.classList.remove('running');
+    // 暫停左右移動，等待結算/射門
+    ballTrack.classList.remove('running');
     holdBtn.classList.remove('hold');
     holdBtn.textContent = '按住開始，放開射門';
 
     const secInt = Math.floor(elapsed);
 
-    if (!byCancel && secInt === 5){
-      // 射門：先飛向球門 → 再播特效
+    if(!byCancel && secInt === TARGET_SEC){
+      // 射門 → 特效
       await kickToGoal();
-      resultEl.innerHTML = 'GOAL!! 五秒命中 🎉<br><span style="display:block;color:#ffeb3b;font-size:clamp(28px,6vw,44px);text-shadow:0 0 14px rgba(255,235,59,.95),0 0 36px rgba(255,235,59,.95);font-weight:900;">挑戰成功！</span>';
-      flashEl.classList.add('show');
-      bannerEl.classList.add('show');
+      resultEl.innerHTML = 'GOAL!! 三秒命中 🎉<br><span style="display:block;color:#ffeb3b;font-size:clamp(28px,6vw,44px);text-shadow:0 0 14px rgba(255,235,59,.95),0 0 36px rgba(255,235,59,.95);font-weight:900;">挑戰成功！</span>';
+      flashEl.classList.add('show'); bannerEl.classList.add('show');
       try{ goalSound.currentTime=0; goalSound.play(); }catch(e){}
       launchConfetti();
       setTimeout(()=> qrModal.classList.add('show'), CFG.QR_DELAY_MS);
-    }else if (secInt < 5){
+
+      // 射門後把子層位置歸零，方便下一輪
+      ballEl.getAnimations().forEach(a=>a.cancel());
+      ballEl.style.transform = 'translate(0,0)';
+    }else if(secInt < TARGET_SEC){
       resultEl.textContent = '太早了！再抓一下節奏～';
-      // 小撲救：左右晃一下
-      ballEl.animate(
-        [{transform:'translateX(-50%)'},
-         {transform:'translateX(calc(-50% - 20px)) rotate(-6deg)'},
-         {transform:'translateX(calc(-50% + 16px)) rotate(6deg)'},
-         {transform:'translateX(-50%)'}],
-        {duration:420, easing:'ease-in-out'}
-      );
+      wobble();
     }else{
       resultEl.textContent = '太晚了！差一點點～';
-      ballEl.animate(
-        [{transform:'translateX(-50%)'},
-         {transform:'translateX(calc(-50% + 16px)) rotate(6deg)'},
-         {transform:'translateX(calc(-50% - 20px)) rotate(-6deg)'},
-         {transform:'translateX(-50%)'}],
-        {duration:420, easing:'ease-in-out'}
-      );
+      wobble();
     }
   }
 
-  // —— 紙屑 —— //
+  // 撲救的小晃動
+  function wobble(){
+    ballEl.animate(
+      [
+        {transform:'translate(0,0)'},
+        {transform:'translate(-18px,-8px) rotate(-6deg)'},
+        {transform:'translate(14px,-5px) rotate(6deg)'},
+        {transform:'translate(0,0)'}
+      ], {duration:420, easing:'ease-in-out'}
+    );
+  }
+
+  // 紙屑
   function launchConfetti(){
     const colors = ['#ffd700','#ff6b6b','#4cd964','#5ac8fa','#ff9f0a','#af52de','#ff3b30'];
     for(let i=0;i<CFG.CONFETTI_COUNT;i++){
-      const s = document.createElement('div');
+      const s=document.createElement('div');
       s.className='confetti';
-      s.style.left = Math.random()*100 + 'vw';
-      s.style.background = colors[i % colors.length];
-      s.style.transform = `translateY(-100px) rotate(${Math.random()*360}deg)`;
-      const dur = CFG.CONFETTI_MIN_DUR + Math.random()*(CFG.CONFETTI_MAX_DUR - CFG.CONFETTI_MIN_DUR);
-      s.style.animation = `confetti-fall ${dur}s linear forwards`;
-      s.style.opacity = 0.8 + Math.random()*0.2;
-      s.style.width  = (8 + Math.random()*6)  + 'px';
-      s.style.height = (12 + Math.random()*10) + 'px';
+      s.style.left=Math.random()*100+'vw';
+      s.style.background=colors[i%colors.length];
+      s.style.transform=`translateY(-100px) rotate(${Math.random()*360}deg)`;
+      const dur=CFG.CONFETTI_MIN_DUR+Math.random()*(CFG_CONFETTI_MAX_DUR=CFG.CONFETTI_MAX_DUR)-CFG.CONFETTI_MIN_DUR;
+      s.style.animation=`confetti-fall ${dur}s linear forwards`;
+      s.style.opacity=0.8+Math.random()*0.2;
+      s.style.width=(8+Math.random()*6)+'px';
+      s.style.height=(12+Math.random()*10)+'px';
       document.body.appendChild(s);
-      setTimeout(()=> s.remove(), dur*1000 + 400);
+      setTimeout(()=>s.remove(),dur*1000+400);
     }
   }
   function clearConfetti(){ document.querySelectorAll('.confetti').forEach(e=>e.remove()); }
 
-  // —— 事件：pointer 系列，手機零延遲 —— //
-  holdBtn.addEventListener('pointerdown', e => { e.preventDefault(); start(); }, {passive:false});
-  holdBtn.addEventListener('pointerup',   e => { e.preventDefault(); stop(false); }, {passive:false});
-  holdBtn.addEventListener('pointercancel', e => { e.preventDefault(); stop(true); }, {passive:false});
-  holdBtn.addEventListener('pointerleave',  e => { if(running){ e.preventDefault(); stop(false); } }, {passive:false});
+  // 事件（pointer：手機零延遲）
+  holdBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); start(); }, {passive:false});
+  holdBtn.addEventListener('pointerup',   e=>{ e.preventDefault(); stop(false); }, {passive:false});
+  holdBtn.addEventListener('pointercancel', e=>{ e.preventDefault(); stop(true); }, {passive:false});
+  holdBtn.addEventListener('pointerleave',  e=>{ if(running){ e.preventDefault(); stop(false); } }, {passive:false});
 
   // 關閉 QR
   closeQr.addEventListener('pointerdown', ()=> qrModal.classList.remove('show'));
