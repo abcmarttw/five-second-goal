@@ -5,121 +5,174 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
 <title>三秒 GOAL 挑戰｜長按到 3 秒放開</title>
 <style>
-:root{
-  --field-max-w: 820px;
+:root {
   --brand: #ffcc00;
-  --grass1:#0f8a3b; --grass2:#0c6f31;
-  --digit:#ff3b30; --digitGlow:rgba(255,80,60,.55);
+  --grass1:#0f8a3b;
+  --grass2:#0c6f31;
+  --digit:#ff3b30;
+  --digitGlow:rgba(255,80,60,.55);
 }
 
-/* 全域 */
+/* 基礎設定 */
 *{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;margin:0;background:#0f8a3b;display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,"PingFang TC",sans-serif;-webkit-tap-highlight-color:transparent;}
-.card{width:min(94vw,var(--field-max-w));padding:14px 12px 22px;border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.28);position:relative;text-align:center;box-shadow:0 18px 38px rgba(0,0,0,.28);}
-.logo{width:clamp(120px,24%,200px);display:block;margin:0 auto 6px;filter:drop-shadow(0 0 4px rgba(0,0,0,.35));}
+html,body{
+  height:100%;width:100%;
+  background:repeating-linear-gradient(90deg,var(--grass1) 0 14vw,var(--grass2) 14vw 28vw);
+  font-family:"Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,"PingFang TC",sans-serif;
+  color:#fff;
+  -webkit-tap-highlight-color:transparent;
+  display:flex;align-items:center;justify-content:center;
+}
+.card{
+  width:min(94vw,820px);
+  background:rgba(0,0,0,0.25);
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.3);
+  box-shadow:0 10px 30px rgba(0,0,0,.4);
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+  padding-bottom:20px;
+}
 
-/* 場地容器 */
-.canvas{position:relative;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:visible;margin-inline:auto;}
-.goal-wrap{position:absolute;left:50%;top:10%;width:78%;transform:translateX(-50%);filter:drop-shadow(0 6px 14px rgba(0,0,0,.28));}
+/* LOGO */
+.logo{width:clamp(120px,25%,220px);display:block;margin:20px auto;filter:drop-shadow(0 0 4px rgba(0,0,0,.4));}
+
+/* 場地區域 */
+.field{
+  position:relative;
+  width:100%;
+  aspect-ratio:16/9;
+  overflow:hidden;
+}
+
+/* 球門 */
+.goal-wrap{position:absolute;top:12%;left:50%;transform:translateX(-50%);width:80%;}
 .goal{width:100%;height:auto;display:block;}
 
 /* 守門員 */
-.goalie{position:absolute;left:50%;bottom:45%;width:clamp(70px,12%,120px);transform:translateX(-50%);animation:goalie-move 2.2s ease-in-out infinite alternate;animation-play-state:paused;z-index:5;pointer-events:none;}
-@keyframes goalie-move{0%{transform:translateX(-35%);}100%{transform:translateX(35%);}}
+.goalie{
+  position:absolute;
+  left:50%;
+  bottom:28%;
+  width:clamp(80px,10%,120px);
+  transform:translateX(-50%);
+  animation:goalie-move 2s ease-in-out infinite alternate;
+  animation-play-state:paused;
+  z-index:5;
+}
+@keyframes goalie-move{
+  0%{transform:translateX(-120px);}
+  100%{transform:translateX(120px);}
+}
 .goalie.running{animation-play-state:running;}
 
-/* 足球（穩定版本） */
+/* 足球 */
 .ball-track{
   position:absolute;
   left:50%;
-  bottom:38%;
-  width:clamp(56px,9%,86px);
+  bottom:18%;
+  width:clamp(70px,9%,90px);
   transform:translateX(-50%);
-  animation:ball-move 2.2s linear infinite alternate;
+  animation:ball-move 2s linear infinite alternate;
   animation-play-state:paused;
   z-index:6;
 }
 @keyframes ball-move{
-  0%{transform:translateX(calc(-50% - 22%));}
-  100%{transform:translateX(calc(-50% + 22%));}
+  0%{transform:translateX(-130px);}
+  100%{transform:translateX(130px);}
 }
 .ball-track.running{animation-play-state:running;}
-.ball-sprite{position:absolute;inset:0;}
-.ball-sprite img{width:100%;height:100%;object-fit:contain;display:block;}
+.ball-sprite img{width:100%;display:block;}
 
-/* 文字與按鈕 */
-h2{font-size:clamp(22px,4.8vw,32px);margin:10px 0 2px;font-weight:900;}
-p{font-size:clamp(14px,3.6vw,18px);margin:0 0 10px;}
-.board{width:min(92%,560px);margin:6px auto 10px;padding:12px 16px;background:linear-gradient(180deg,#0b0b0b,#1b1b1b);border-radius:14px;border:1px solid rgba(255,255,255,.18);box-shadow:inset 0 0 18px rgba(0,0,0,.8);}
-.digits{font-family:ui-monospace,monospace;color:var(--digit);text-shadow:0 0 10px var(--digitGlow);font-size:clamp(42px,12vw,92px);}
+/* 計時區 */
+h2{margin-top:6px;font-size:clamp(22px,5vw,32px);}
+p{font-size:clamp(14px,3.5vw,18px);opacity:.9;}
+.board{margin:10px auto;width:80%;background:#111;padding:14px;border-radius:12px;}
+.digits{font-family:ui-monospace,monospace;font-size:clamp(48px,12vw,92px);color:var(--digit);text-shadow:0 0 10px var(--digitGlow);}
 
 /* 按鈕 */
-.actions{display:flex;justify-content:center;margin:16px 0 4px;position:relative;z-index:30;}
-.btn{padding:clamp(18px,3.2vw,26px) clamp(44px,7.6vw,64px);font-size:clamp(22px,4.8vw,32px);border-radius:20px;border:0;cursor:pointer;background:linear-gradient(180deg,#ffe169,#ffcc00);color:#111;font-weight:900;box-shadow:0 8px 0 #b59a00,0 14px 24px rgba(0,0,0,.35);user-select:none;touch-action:manipulation;transition:transform .06s ease;z-index:31;}
-.btn.hold{transform:scale(.97);}
-.result{min-height:32px;font-weight:800;margin-top:8px;font-size:clamp(14px,3.6vw,18px);}
+.actions{margin:16px 0;}
+.btn{
+  padding:18px 60px;
+  font-size:clamp(20px,4.5vw,30px);
+  border-radius:18px;
+  border:0;
+  background:linear-gradient(180deg,#ffe169,#ffcc00);
+  color:#111;font-weight:900;
+  box-shadow:0 8px 0 #b59a00,0 14px 24px rgba(0,0,0,.35);
+  cursor:pointer;
+  transition:transform .08s ease;
+}
+.btn.hold{transform:scale(.95);}
+.result{min-height:30px;font-weight:800;margin-top:8px;font-size:clamp(14px,3.5vw,18px);}
 
 /* 特效 */
-.flash{position:absolute;inset:-10%;opacity:0;background:radial-gradient(circle at 50% 40%,rgba(255,255,160,.85),rgba(255,255,160,0) 45%);}
+.flash{position:absolute;inset:-20%;opacity:0;background:radial-gradient(circle at 50% 40%,rgba(255,255,160,.9),rgba(255,255,160,0) 45%);}
 .flash.show{animation:flash .9s ease-out;}
 @keyframes flash{from{opacity:1}to{opacity:0}}
-.goal-banner{position:absolute;top:8px;left:50%;transform:translateX(-50%) scale(.9);background:linear-gradient(180deg,#ffed7a,#ffc400);color:#4a2b00;font-weight:900;padding:10px 18px;border-radius:999px;border:2px solid rgba(255,255,255,.85);box-shadow:0 12px 24px rgba(0,0,0,.35);opacity:0;text-align:center;z-index:25;font-size:clamp(18px,4.2vw,24px);}
+.goal-banner{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%) scale(.9);
+  background:linear-gradient(180deg,#ffed7a,#ffc400);
+  color:#4a2b00;font-weight:900;padding:10px 18px;border-radius:999px;
+  border:2px solid rgba(255,255,255,.85);box-shadow:0 12px 24px rgba(0,0,0,.35);
+  opacity:0;pointer-events:none;text-align:center;z-index:25;
+}
 .goal-banner.show{animation:banner-pop .9s cubic-bezier(.2,.9,.2,1) forwards;}
 @keyframes banner-pop{0%{opacity:0;transform:translateX(-50%) translateY(-12px) scale(.82)}60%{opacity:1;transform:translateX(-50%) scale(1.06)}100%{opacity:1;transform:translateX(-50%) scale(1)}}
 
 /* QR */
-.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:50;padding:16px;}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:50;}
 .modal.show{display:flex;}
 .modal-card{width:min(92vw,420px);background:#fff;color:#111;border-radius:18px;padding:20px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.35);}
 .modal-card h3{margin:0 0 8px;font-size:clamp(18px,4.6vw,24px);}
 .modal-card p{margin:0 0 12px;font-size:clamp(14px,3.8vw,18px);}
-.qr{width:100%;max-width:320px;aspect-ratio:1/1;display:block;margin:0 auto 10px;}
+.qr{width:100%;max-width:320px;display:block;margin:0 auto 10px;}
 .close{margin-top:8px;background:var(--brand);color:#111;font-weight:900;border:0;border-radius:12px;padding:10px 16px;cursor:pointer;}
 </style>
 </head>
 <body>
-  <div class="card">
-    <img src="logo.png" alt="LOGO" class="logo">
-    <div class="canvas" id="canvas">
-      <div class="flash" id="flash"></div>
-      <div class="goal-banner" id="banner">GOAL!!<br><span style="display:block;color:#ffb700;font-size:clamp(22px,4.8vw,36px)">挑戰成功！</span></div>
+<div class="card">
+  <img src="logo.png" class="logo" alt="logo">
+  <div class="flash" id="flash"></div>
+  <div class="goal-banner" id="banner">GOAL!!<br><span style="color:#ffb700;font-size:1.2em;">挑戰成功！</span></div>
 
-      <div class="goal-wrap">
-        <svg class="goal" viewBox="0 0 640 220" aria-hidden="true">
-          <defs><pattern id="net" width="16" height="16" patternUnits="userSpaceOnUse">
-            <path d="M0 8 H16 M8 0 V16" stroke="rgba(255,255,255,.35)" stroke-width="1"/>
-          </pattern></defs>
-          <rect x="60" y="24" width="520" height="160" fill="url(#net)" stroke="rgba(255,255,255,.6)" stroke-width="6" rx="8"/>
-          <rect x="40" y="12" width="560" height="188" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="10" rx="14"/>
-        </svg>
-      </div>
-
-      <img src="goalie.png" id="goalie" class="goalie" alt="goalie">
-
-      <div id="ballTrack" class="ball-track">
-        <div id="ball" class="ball-sprite"><img src="soccer.png" alt="soccer ball"></div>
-      </div>
+  <div class="field">
+    <div class="goal-wrap">
+      <svg class="goal" viewBox="0 0 640 220">
+        <defs><pattern id="net" width="16" height="16" patternUnits="userSpaceOnUse">
+          <path d="M0 8 H16 M8 0 V16" stroke="rgba(255,255,255,.35)" stroke-width="1"/>
+        </pattern></defs>
+        <rect x="60" y="24" width="520" height="160" fill="url(#net)" stroke="rgba(255,255,255,.6)" stroke-width="6" rx="8"/>
+        <rect x="40" y="12" width="560" height="188" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="10" rx="14"/>
+      </svg>
     </div>
 
-    <h2>三秒 GOAL 挑戰</h2>
-    <p>玩法：<b>按住</b>開始計時，<b>3 秒放開</b>就進球！</p>
-
-    <div class="board"><div id="timer" class="digits">00:00</div></div>
-    <div class="actions"><button id="holdBtn" class="btn" type="button">按住開始，放開射門</button></div>
-    <div id="result" class="result"></div>
-  </div>
-
-  <!-- QR -->
-  <div id="qrModal" class="modal">
-    <div class="modal-card">
-      <h3>歡迎追蹤 ABC-MART 官方 IG！</h3>
-      <p>掃描下方 QR Code 看更多活動與最新消息 👟</p>
-      <img src="qrcode.png" class="qr" alt="QR Code">
-      <button id="closeQr" class="close">我已掃描</button>
+    <img id="goalie" class="goalie" src="goalie.png" alt="goalie">
+    <div id="ballTrack" class="ball-track">
+      <div id="ball" class="ball-sprite"><img src="soccer.png" alt="ball"></div>
     </div>
   </div>
 
-  <audio id="goalSound" src="goal.aac" preload="auto"></audio>
+  <h2>三秒 GOAL 挑戰</h2>
+  <p>長按開始計時，<b>3 秒放開</b>就能射門成功！</p>
+
+  <div class="board"><div id="timer" class="digits">00:00</div></div>
+  <div class="actions"><button id="holdBtn" class="btn" type="button">按住開始，放開射門</button></div>
+  <div id="result" class="result"></div>
+</div>
+
+<!-- QR -->
+<div id="qrModal" class="modal">
+  <div class="modal-card">
+    <h3>歡迎追蹤 ABC-MART 官方 IG！</h3>
+    <p>掃描下方 QR Code 看更多活動與最新消息 👟</p>
+    <img src="qrcode.png" class="qr" alt="QR">
+    <button id="closeQr" class="close">我已掃描</button>
+  </div>
+</div>
+
+<audio id="goalSound" src="goal.aac" preload="auto"></audio>
 
 <script>
 (() => {
@@ -128,8 +181,6 @@ p{font-size:clamp(14px,3.6vw,18px);margin:0 0 10px;}
   const holdBtn=document.getElementById('holdBtn');
   const resultEl=document.getElementById('result');
   const ballTrack=document.getElementById('ballTrack');
-  const ballEl=document.getElementById('ball');
-  const goalSvg=document.querySelector('.goal');
   const goalieEl=document.getElementById('goalie');
   const flashEl=document.getElementById('flash');
   const bannerEl=document.getElementById('banner');
@@ -143,7 +194,8 @@ p{font-size:clamp(14px,3.6vw,18px);margin:0 0 10px;}
   const fmtSSCC=ms=>{const t=ms/1000,s=Math.floor(t),cs=Math.floor((t-s)*100);return`${pad2(s)}:${pad2(cs)}`};
 
   function start(){
-    if(running)return;running=true;startTime=performance.now();
+    if(running)return;
+    running=true;startTime=performance.now();
     timerEl.textContent='00:00';resultEl.textContent='';
     goalieEl.src='goalie.png';flashEl.classList.remove('show');bannerEl.classList.remove('show');
     ballTrack.classList.add('running');goalieEl.classList.add('running');
@@ -153,16 +205,17 @@ p{font-size:clamp(14px,3.6vw,18px);margin:0 0 10px;}
     ticker=setInterval(()=>{timerEl.textContent=fmtSSCC(performance.now()-startTime);},50);
   }
 
-  async function stop(){
-    if(!running)return;running=false;clearInterval(ticker);clearInterval(goalieSpeedTimer);
+  function stop(){
+    if(!running)return;
+    running=false;clearInterval(ticker);clearInterval(goalieSpeedTimer);
     const elapsed=(performance.now()-startTime)/1000;timerEl.textContent=fmtSSCC(elapsed*1000);
     ballTrack.classList.remove('running');goalieEl.classList.remove('running');
     holdBtn.classList.remove('hold');holdBtn.textContent='按住開始，放開射門';
     const secInt=Math.floor(elapsed);
     if(secInt===TARGET_SEC){
       goalieEl.src='goalie_miss.png';
-      resultEl.innerHTML='GOAL!! 三秒命中 🎉<br><span style="display:block;color:#ffeb3b;font-size:clamp(24px,5.2vw,40px);text-shadow:0 0 14px rgba(255,235,59,.95);font-weight:900;">挑戰成功！</span>';
       flashEl.classList.add('show');bannerEl.classList.add('show');
+      resultEl.innerHTML='GOAL!! 三秒命中 🎉<br><span style="color:#ffeb3b;font-weight:900;">挑戰成功！</span>';
       try{goalSound.currentTime=0;goalSound.play();}catch(e){}
       setTimeout(()=>qrModal.classList.add('show'),2000);
     }else{
