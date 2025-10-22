@@ -1,169 +1,190 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+<title>三秒 GOAL 挑戰｜長按到 3 秒放開</title>
+<style>
+:root{
+  --grass1:#0f8a3b; --grass2:#0c6f31; --brand:#ffcc00;
+  --digit:#ff3b30; --digitGlow:rgba(255,80,60,.55);
+
+  --ball-track-x: 32%;
+  --ball-track-bottom: 210px;
+  --goalie-bottom: 130px;
+  --ball-speed: 2.0s;
+  --ball-amplitude: 120px;
+  --goalie-range: 240px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:repeating-linear-gradient(90deg,var(--grass1) 0 14vw,var(--grass2) 14vw 28vw);
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  font-family:"Noto Sans TC",sans-serif;
+  -webkit-tap-highlight-color:transparent;
+}
+.card{
+  width:min(92vw,720px);padding:24px 20px 32px;border-radius:22px;
+  background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.08));
+  border:1px solid rgba(255,255,255,.28);text-align:center;position:relative;overflow:hidden;
+  box-shadow:0 18px 38px rgba(0,0,0,.28);
+}
+.logo{width:clamp(120px,28%,220px);display:block;margin:0 auto 16px;filter:drop-shadow(0 0 4px rgba(0,0,0,.35))}
+.stadium{height:170px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;filter:drop-shadow(0 6px 14px rgba(0,0,0,.28))}
+.goal{width:82%;max-width:560px}
+.ball-track{
+  position:absolute;left:var(--ball-track-x);bottom:var(--ball-track-bottom);
+  width:78px;height:78px;transform:translateX(-50%);
+  animation:ball-move var(--ball-speed) linear infinite alternate;
+  animation-play-state:paused;pointer-events:none;z-index:6;
+}
+.ball-track.running{animation-play-state:running}
+@keyframes ball-move{
+  0%{transform:translateX(calc(-50% - var(--ball-amplitude)))}
+  100%{transform:translateX(calc(-50% + var(--ball-amplitude)))}
+}
+.ball-sprite{position:absolute;inset:0}
+.ball-sprite img{width:100%;height:100%;object-fit:contain;display:block}
+
+.goalie{
+  position:absolute;left:50%;bottom:var(--goalie-bottom);
+  width:120px;max-width:22vw;transform:translateX(-50%);
+  animation:goalie-move 2s ease-in-out infinite alternate;
+  animation-play-state:paused;z-index:5;pointer-events:none;
+}
+.goalie.running{animation-play-state:running}
+@keyframes goalie-move{
+  0%{transform:translateX(calc(-1 * var(--goalie-range)))}
+  100%{transform:translateX(var(--goalie-range))}
+}
+.board{width:min(88%,520px);margin:10px auto 10px;padding:20px 24px;background:#111;border-radius:16px;box-shadow:inset 0 0 18px rgba(0,0,0,.8)}
+.digits{font-family:monospace;color:var(--digit);text-shadow:0 0 10px var(--digitGlow);font-size:clamp(48px,12vw,100px)}
+
+.actions{display:flex;justify-content:center;margin:18px 0 6px}
+.btn{
+  padding:26px 64px;font-size:32px;border-radius:22px;border:0;cursor:pointer;
+  background:linear-gradient(180deg,#ffe169,#ffcc00);color:#111;font-weight:900;
+  box-shadow:0 8px 0 #b59a00,0 14px 24px rgba(0,0,0,.35);
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;
+  transition:transform .06s ease;
+}
+.btn.hold{transform:scale(.97)}
+.result{min-height:38px;font-weight:800;margin-top:10px}
+
+.flash{position:absolute;inset:-20%;opacity:0;background:radial-gradient(circle at 50% 40%,rgba(255,255,160,.85),rgba(255,255,160,0) 45%)}
+.flash.show{animation:flash .9s ease-out}@keyframes flash{from{opacity:1}to{opacity:0}}
+.goal-banner{position:absolute;top:12px;left:50%;transform:translateX(-50%) scale(.9);background:#ffed7a;color:#4a2b00;font-weight:900;padding:12px 24px;border-radius:999px;border:2px solid rgba(255,255,255,.8);box-shadow:0 12px 24px rgba(0,0,0,.35);opacity:0}
+.goal-banner.show{animation:banner-pop .9s cubic-bezier(.2,.9,.2,1) forwards}
+@keyframes banner-pop{0%{opacity:0;transform:translateX(-50%) translateY(-18px) scale(.8)}60%{opacity:1;transform:translateX(-50%) translateY(0) scale(1.06)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+.confetti{position:absolute;width:10px;height:16px;opacity:.95;top:-20px}
+@keyframes confetti-fall{to{transform:translateY(120vh) rotate(720deg)}}
+
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:50}
+.modal.show{display:flex}
+.modal-card{width:min(90vw,420px);background:#fff;color:#111;border-radius:18px;padding:20px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.35)}
+.qr{width:100%;max-width:320px;aspect-ratio:1/1;display:block;margin:0 auto 10px}
+.close{margin-top:8px;background:var(--brand);color:#111;font-weight:900;border:0;border-radius:12px;padding:10px 16px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="card">
+  <img src="logo.png" class="logo" alt="logo">
+  <div id="flash" class="flash"></div>
+  <div id="banner" class="goal-banner">GOAL!!<br><span style="display:block;color:#ffb700;font-size:clamp(26px,6vw,42px)">挑戰成功！</span></div>
+
+  <div class="stadium">
+    <svg class="goal" viewBox="0 0 640 220"><defs><pattern id="net" width="16" height="16" patternUnits="userSpaceOnUse"><path d="M0 8H16M8 0V16" stroke="rgba(255,255,255,.35)" stroke-width="1"/></pattern></defs><rect x="60" y="24" width="520" height="160" fill="url(#net)" stroke="rgba(255,255,255,.6)" stroke-width="6" rx="8"/><rect x="40" y="12" width="560" height="188" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="10" rx="14"/></svg>
+    <img id="goalie" class="goalie" src="goalie.png" alt="goalie">
+  </div>
+
+  <div id="ballTrack" class="ball-track">
+    <div id="ball" class="ball-sprite"><img src="soccer.png" alt="ball"></div>
+  </div>
+
+  <h1>三秒GOAL挑戰</h1>
+  <p>玩法：<b>按住</b>按鈕開始計時，<b>在 3 秒</b>時<b>放開</b>就進球！</p>
+
+  <div class="board"><div id="timer" class="digits">00:00</div></div>
+  <div class="actions"><button id="holdBtn" class="btn">按住開始，放開射門</button></div>
+  <div id="result" class="result"></div>
+</div>
+
+<div id="qrModal" class="modal">
+  <div class="modal-card">
+    <h3>歡迎追蹤 ABC-MART 官方 IG！</h3>
+    <p>掃描下方 QR Code 看更多活動與最新消息 👟</p>
+    <img src="https://qrtiger.com/temp/1761104055255.png" class="qr" alt="QR Code" onerror="this.src='qrcode.png'">
+    <button id="closeQr" class="close">我已掃描</button>
+  </div>
+</div>
+<audio id="goalSound" src="goal.aac" preload="auto"></audio>
+
 <script>
 (() => {
-  const TARGET_SEC = 3; // ✅ 成功條件（整數秒 3）
-
-  // ---- 只宣告一次，避免重複宣告錯誤 ----
-  const timerEl   = document.getElementById('timer');
-  const holdBtn   = document.getElementById('holdBtn');
-  const resultEl  = document.getElementById('result');
-
-  const ballTrack = document.getElementById('ballTrack'); // 父層：左右移動
-  const ballEl    = document.getElementById('ball');      // 子層：射門
-  const goalSvg   = document.querySelector('.goal');
-
-  const goalieEl  = document.getElementById('goalie');    // 守門員
-  const flashEl   = document.getElementById('flash');
-  const bannerEl  = document.getElementById('banner');
-  const qrModal   = document.getElementById('qrModal');
-  const closeQr   = document.getElementById('closeQr');
+  const TARGET_SEC = 3;
+  const timerEl = document.getElementById('timer');
+  const holdBtn = document.getElementById('holdBtn');
+  const resultEl = document.getElementById('result');
+  const ballTrack = document.getElementById('ballTrack');
+  const ballEl = document.getElementById('ball');
+  const goalSvg = document.querySelector('.goal');
+  const goalieEl = document.getElementById('goalie');
+  const flashEl = document.getElementById('flash');
+  const bannerEl = document.getElementById('banner');
+  const qrModal = document.getElementById('qrModal');
+  const closeQr = document.getElementById('closeQr');
   const goalSound = document.getElementById('goalSound');
+  document.addEventListener('contextmenu', e=>e.preventDefault());
+  let startTime=0,ticker=0,running=false,kickAnim=null,goalieResetTimer=0,goalieSpeedTimer=0;
+  const pad2=n=>n.toString().padStart(2,'0');
+  const fmtSSCC=ms=>{const t=ms/1000,s=Math.floor(t),cs=Math.floor((t-s)*100);return`${pad2(s)}:${pad2(cs)}`};
 
-  document.addEventListener('contextmenu', e => e.preventDefault(), {passive:false});
-
-  const CFG = { QR_DELAY_MS: 2000, CONFETTI_COUNT: 120, CONFETTI_MIN_DUR: 1.6, CONFETTI_MAX_DUR: 2.8 };
-
-  let startTime = 0;
-  let ticker = 0;
-  let running = false;
-  let kickAnim = null;
-  let goalieResetTimer = 0;
-  let goalieSpeedTimer = 0; // ⏱️ 隨機加速的 interval id
-
-  const pad2 = n => n.toString().padStart(2,'0');
-  const fmtSSCC = ms => { const t=ms/1000,s=Math.floor(t),cs=Math.floor((t-s)*100); return `${pad2(s)}:${pad2(cs)}`; };
-
-  // 射門（動子層，不影響父層左右）
   function kickToGoal(){
-    const ball = ballEl.getBoundingClientRect();
-    const goal = goalSvg.getBoundingClientRect();
-    const dx = (goal.left + goal.width/2) - (ball.left + ball.width/2);
-    const dy = (goal.top + goal.height*0.35) - (ball.top + ball.height/2);
-
-    kickAnim = ballEl.animate(
-      [
-        { transform: 'translate(0,0)' },
-        { transform: `translate(${dx*0.6}px, ${dy-140}px)` },
-        { transform: `translate(${dx}px, ${dy}px)` }
-      ],
-      { duration: 850, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'forwards' }
-    );
-    return kickAnim.finished.finally(()=>{ kickAnim=null; }).catch(()=>{});
+    const b=ballEl.getBoundingClientRect(),g=goalSvg.getBoundingClientRect();
+    const dx=(g.left+g.width/2)-(b.left+b.width/2),dy=(g.top+g.height*0.35)-(b.top+b.height/2);
+    kickAnim=ballEl.animate([{transform:'translate(0,0)'},{transform:`translate(${dx*0.6}px,${dy-140}px)`},{transform:`translate(${dx}px,${dy}px)`}],{duration:850,easing:'cubic-bezier(.2,.7,.2,1)',fill:'forwards'});
+    return kickAnim.finished.finally(()=>kickAnim=null).catch(()=>{});
   }
-
-  function wobble(){
-    ballEl.animate(
-      [
-        {transform:'translate(0,0)'},
-        {transform:'translate(-18px,-8px) rotate(-6deg)'},
-        {transform:'translate(14px,-5px) rotate(6deg)'},
-        {transform:'translate(0,0)'}
-      ], {duration:420, easing:'ease-in-out'}
-    );
-  }
-
-  function launchConfetti(){
-    const colors = ['#ffd700','#ff6b6b','#4cd964','#5ac8fa','#ff9f0a','#af52de','#ff3b30'];
-    for(let i=0;i<CFG.CONFETTI_COUNT;i++){
-      const s=document.createElement('div');
-      s.className='confetti';
-      s.style.left=Math.random()*100+'vw';
-      s.style.background=colors[i%colors.length];
-      s.style.transform=`translateY(-100px) rotate(${Math.random()*360}deg)`;
-      const dur=CFG.CONFETTI_MIN_DUR+Math.random()*(CFG.CONFETTI_MAX_DUR-CFG.CONFETTI_MIN_DUR);
-      s.style.animation=`confetti-fall ${dur}s linear forwards`;
-      s.style.opacity=0.8+Math.random()*0.2;
-      s.style.width=(8+Math.random()*6)+'px';
-      s.style.height=(12+Math.random()*10)+'px';
-      document.body.appendChild(s);
-      setTimeout(()=>s.remove(),dur*1000+400);
-    }
-  }
-  function clearConfetti(){ document.querySelectorAll('.confetti').forEach(e=>e.remove()); }
+  function wobble(){ballEl.animate([{transform:'translate(0,0)'},{transform:'translate(-18px,-8px) rotate(-6deg)'},{transform:'translate(14px,-5px) rotate(6deg)'},{transform:'translate(0,0)'}],{duration:420,easing:'ease-in-out'})}
+  function launchConfetti(){for(let i=0;i<100;i++){const s=document.createElement('div');s.className='confetti';s.style.left=Math.random()*100+'vw';s.style.background=`hsl(${Math.random()*360},100%,60%)`;s.style.animation=`confetti-fall ${1.5+Math.random()*1.5}s linear forwards`;document.body.appendChild(s);setTimeout(()=>s.remove(),3000);}}
+  function clearConfetti(){document.querySelectorAll('.confetti').forEach(e=>e.remove());}
 
   function start(){
-    if(running) return;
-    running = true;
-    startTime = performance.now();
-    timerEl.textContent = '00:00';
-    resultEl.textContent = '';
-
-    // 重置射門動畫與守門員圖
-    if (kickAnim){ try{ kickAnim.cancel(); }catch(e){} kickAnim=null; }
+    if(running)return;running=true;startTime=performance.now();timerEl.textContent='00:00';resultEl.textContent='';
+    if(kickAnim){try{kickAnim.cancel();}catch(e){}kickAnim=null;}
     ballEl.getAnimations().forEach(a=>a.cancel());
-    ballEl.style.transform = 'translate(0,0)';
-    if (goalieResetTimer){ clearTimeout(goalieResetTimer); goalieResetTimer = 0; }
-    goalieEl.src = 'goalie.png';
-
-    flashEl.classList.remove('show'); bannerEl.classList.remove('show');
-    clearConfetti();
-
-    // 啟動左右移動
-    ballTrack.classList.add('running');
-    goalieEl.classList.add('running');
-    holdBtn.classList.add('hold');
-    holdBtn.textContent = '放開射門！';
-
-    // 🧤 隨機加速守門員：每回合重設速度 + 遊戲進行時持續隨機變速
-    const firstSpeed = (1.5 + Math.random()*1.5).toFixed(2) + 's';
-    goalieEl.style.animationDuration = firstSpeed;
-    if (goalieSpeedTimer) clearInterval(goalieSpeedTimer);
-    goalieSpeedTimer = setInterval(()=>{
-      if (!running) return;
-      const newSpeed = (1.5 + Math.random()*1.5).toFixed(2) + 's';
-      goalieEl.style.animationDuration = newSpeed;
-    }, 1200);
-
-    // 輕量計時
-    ticker = setInterval(()=>{ timerEl.textContent = fmtSSCC(performance.now() - startTime); }, 50);
+    ballEl.style.transform='translate(0,0)';if(goalieResetTimer){clearTimeout(goalieResetTimer);goalieResetTimer=0;}
+    goalieEl.src='goalie.png';flashEl.classList.remove('show');bannerEl.classList.remove('show');clearConfetti();
+    ballTrack.classList.add('running');goalieEl.classList.add('running');holdBtn.classList.add('hold');holdBtn.textContent='放開射門！';
+    const firstSpeed=(1.5+Math.random()*1.5).toFixed(2)+'s';goalieEl.style.animationDuration=firstSpeed;
+    if(goalieSpeedTimer)clearInterval(goalieSpeedTimer);
+    goalieSpeedTimer=setInterval(()=>{if(!running)return;goalieEl.style.animationDuration=(1.5+Math.random()*1.5).toFixed(2)+'s';},1200);
+    ticker=setInterval(()=>timerEl.textContent=fmtSSCC(performance.now()-startTime),50);
   }
 
   async function stop(byCancel=false){
-    if(!running) return;
-    running=false;
-
-    clearInterval(ticker);
-    clearInterval(goalieSpeedTimer);
-    goalieSpeedTimer = 0;
-
-    const elapsed = (performance.now()-startTime)/1000;
-    timerEl.textContent = fmtSSCC(elapsed*1000);
-
-    // 停止左右移動
-    ballTrack.classList.remove('running');
-    goalieEl.classList.remove('running');
-    holdBtn.classList.remove('hold');
-    holdBtn.textContent = '按住開始，放開射門';
-
-    const secInt = Math.floor(elapsed);
-
-    if(!byCancel && secInt === TARGET_SEC){
-      // 成功：守門員撲空圖、球飛向球門、特效
-      goalieEl.src = 'goalie_miss.png';
-      await kickToGoal();
-      resultEl.innerHTML = 'GOAL!! 三秒命中 🎉<br><span style="display:block;color:#ffeb3b;font-size:clamp(28px,6vw,44px);text-shadow:0 0 14px rgba(255,235,59,.95),0 0 36px rgba(255,235,59,.95);font-weight:900;">挑戰成功！</span>';
-      flashEl.classList.add('show'); bannerEl.classList.add('show');
-      try{ goalSound.currentTime=0; goalSound.play(); }catch(e){}
-      launchConfetti();
-      setTimeout(()=> qrModal.classList.add('show'), CFG.QR_DELAY_MS);
+    if(!running)return;running=false;clearInterval(ticker);clearInterval(goalieSpeedTimer);
+    const elapsed=(performance.now()-startTime)/1000;timerEl.textContent=fmtSSCC(elapsed*1000);
+    ballTrack.classList.remove('running');goalieEl.classList.remove('running');holdBtn.classList.remove('hold');holdBtn.textContent='按住開始，放開射門';
+    const secInt=Math.floor(elapsed);
+    if(!byCancel&&secInt===TARGET_SEC){
+      goalieEl.src='goalie_miss.png';await kickToGoal();
+      resultEl.innerHTML='GOAL!! 三秒命中 🎉<br><span style="display:block;color:#ffeb3b;font-size:clamp(28px,6vw,44px);text-shadow:0 0 14px rgba(255,235,59,.95);font-weight:900;">挑戰成功！</span>';
+      flashEl.classList.add('show');bannerEl.classList.add('show');try{goalSound.currentTime=0;goalSound.play();}catch(e){}launchConfetti();setTimeout(()=>qrModal.classList.add('show'),2000);
     }else{
-      // 失敗：守門員接到球圖、球被擋小晃動
-      goalieEl.src = 'goalie_save.png';
-      resultEl.textContent = (secInt < TARGET_SEC) ? '太早了！被守門員擋下～' : '太晚了！被守門員收下～';
-      wobble();
+      goalieEl.src='goalie_save.png';resultEl.textContent=(secInt<TARGET_SEC)?'太早了！被守門員擋下～':'太晚了！被守門員收下～';wobble();
     }
-
-    // 2 秒後把守門員圖恢復
-    goalieResetTimer = setTimeout(()=>{ goalieEl.src = 'goalie.png'; }, 2000);
+    goalieResetTimer=setTimeout(()=>goalieEl.src='goalie.png',2000);
   }
 
-  // 事件（pointer：手機零延遲）
-  holdBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); start(); }, {passive:false});
-  holdBtn.addEventListener('pointerup',   e=>{ e.preventDefault(); stop(false); }, {passive:false});
-  holdBtn.addEventListener('pointercancel', e=>{ e.preventDefault(); stop(true); }, {passive:false});
-  holdBtn.addEventListener('pointerleave',  e=>{ if(running){ e.preventDefault(); stop(false); } }, {passive:false});
-
-  // 關閉 QR
-  closeQr.addEventListener('pointerdown', ()=> qrModal.classList.remove('show'));
-  qrModal.addEventListener('pointerdown', e=>{ if(e.target===qrModal) qrModal.classList.remove('show'); });
+  holdBtn.addEventListener('pointerdown',e=>{e.preventDefault();start();});
+  holdBtn.addEventListener('pointerup',e=>{e.preventDefault();stop(false);});
+  holdBtn.addEventListener('pointercancel',e=>{e.preventDefault();stop(true);});
+  holdBtn.addEventListener('pointerleave',e=>{if(running){e.preventDefault();stop(false);}});
+  closeQr.addEventListener('pointerdown',()=>qrModal.classList.remove('show'));
+  qrModal.addEventListener('pointerdown',e=>{if(e.target===qrModal)qrModal.classList.remove('show');});
 })();
 </script>
+</body>
+</html>
