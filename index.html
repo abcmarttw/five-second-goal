@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<title>五秒GOAL挑戰｜秒:百分秒</title>
+<style>
+:root{
+  --grass1:#0f8a3b; --grass2:#0c6f31; --brand:#ffcc00;
+  --digit:#ff3b30; --digitGlow:rgba(255,80,60,.55);
+  --ball-speed: 1.8s;      /* 足球左右移動速度 */
+  --ball-amplitude: 280px; /* 左右移動幅度 */
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:repeating-linear-gradient(90deg,var(--grass1) 0 14vw,var(--grass2) 14vw 28vw);
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  -webkit-tap-highlight-color: transparent;
+  font-family:ui-sans-serif,system-ui,-apple-system,"PingFang TC","Noto Sans TC",Arial;
+}
+.card{
+  width:min(92vw,720px); padding:24px 20px 32px; border-radius:22px;
+  background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.08));
+  border:1px solid rgba(255,255,255,.28); backdrop-filter:blur(8px);
+  box-shadow:0 18px 38px rgba(0,0,0,.28); text-align:center; position:relative; overflow:hidden;
+}
+.logo{ width:clamp(120px,28%,220px); display:block; margin:0 auto 16px; filter:drop-shadow(0 0 4px rgba(0,0,0,.35)); }
+
+/* 球門與足球 */
+.stadium{height:170px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; filter:drop-shadow(0 6px 14px rgba(0,0,0,.28))}
+.goal{width:82%; max-width:560px}
+.ball{
+  position:absolute; bottom:28px; left:50%; transform:translateX(-50%);
+  width:80px; height:80px;
+  animation: ball-move var(--ball-speed) linear infinite alternate;
+  animation-play-state: paused; will-change: transform;
+}
+.ball.running{ animation-play-state: running; }
+.ball img{ width:100%; height:100%; object-fit:contain; display:block; }
+@keyframes ball-move{
+  0%   { transform: translateX(calc(-50% - var(--ball-amplitude))); }
+  100% { transform: translateX(calc(-50% + var(--ball-amplitude))); }
+}
+
+/* 進球/撲救（停表後用） */
+.ball.scored{ animation: kick 900ms cubic-bezier(.2,.7,.2,1) forwards }
+@keyframes kick{
+  0%{ transform:translate(-50%,0) scale(1) }
+  45%{ transform:translate(-50%,-120px) scale(1.02) }
+  100%{ transform:translate(-50%,-150px) scale(.92) }
+}
+.ball.saved{ animation: saved 520ms ease-in-out }
+@keyframes saved{
+  0%{ transform:translate(-50%,0) }
+  25%{ transform:translate(calc(-50% - 24px),-10px) rotate(-8deg)}
+  50%{ transform:translate(calc(-50% + 20px),-6px) rotate(6deg)}
+  100%{ transform:translate(-50%,0) }
+}
+
+/* 計時數字：秒:百分秒（00:00） */
+.board{
+  width:min(88%,520px); margin:10px auto 10px; padding:20px 24px;
+  background:linear-gradient(180deg,#0a0a0a,#1a1a1a);
+  border-radius:16px; border:1px solid rgba(255,255,255,.2);
+  box-shadow: inset 0 0 18px rgba(0,0,0,.8), 0 10px 24px rgba(0,0,0,.25);
+}
+.digits{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-variant-numeric: tabular-nums; letter-spacing:.06em; color: var(--digit);
+  text-shadow: 0 0 10px var(--digitGlow), 0 0 22px var(--digitGlow);
+  font-size: clamp(48px, 12vw, 100px); line-height:1;
+}
+
+/* 按鈕與提示 */
+.actions{display:flex; justify-content:center; margin:18px 0 6px;}
+.btn{
+  padding:26px 64px; font-size:32px; border-radius:22px; border:0; cursor:pointer; touch-action:manipulation;
+  background:linear-gradient(180deg,#ffe169,#ffcc00); color:#111; font-weight:900; letter-spacing:.02em;
+  box-shadow:0 8px 0 #b59a00, 0 14px 24px rgba(0,0,0,.35);
+}
+.result{min-height:38px; font-weight:800; margin-top:10px}
+
+/* 盛大進球效果：強光 + GOAL 橫幅 + 五彩紙屑 */
+.flash{position:absolute; inset:-20%; pointer-events:none; opacity:0; background:radial-gradient(circle at 50% 40%, rgba(255,255,160,.85), rgba(255,255,160,0) 45%)}
+.flash.show{animation:flash .9s ease-out}
+@keyframes flash{from{opacity:1}to{opacity:0}}
+
+/* GOAL 橫幅 + 挑戰成功（加大加亮） */
+.goal-banner{
+  position:absolute; top:12px; left:50%; transform:translateX(-50%) scale(.9);
+  background:linear-gradient(180deg,#ffed7a,#ffc400);
+  color:#4a2b00; font-weight:900; padding:12px 24px; border-radius:999px;
+  border:2px solid rgba(255,255,255,.8); box-shadow:0 12px 24px rgba(0,0,0,.35);
+  opacity:0; pointer-events:none; text-align:center;
+}
+.goal-banner .success{
+  display:block; margin-top:6px; font-weight:900;
+  font-size: clamp(26px, 6vw, 42px);
+  color:#ffb700;
+  animation: success-pop .9s cubic-bezier(.2,.9,.2,1) .05s both, success-glow 1.6s ease-in-out 1.2s 3;
+}
+.goal-banner.show{ animation: banner-pop .9s cubic-bezier(.2,.9,.2,1) forwards }
+@keyframes banner-pop{
+  0%{opacity:0; transform:translateX(-50%) translateY(-18px) scale(.8)}
+  60%{opacity:1; transform:translateX(-50%) translateY(0) scale(1.06)}
+  100%{opacity:1; transform:translateX(-50%) translateY(0) scale(1)}
+}
+@keyframes success-pop{
+  0%{transform:translateY(-6px) scale(.9); opacity:0}
+  60%{transform:translateY(0) scale(1.08); opacity:1}
+  100%{transform:translateY(0) scale(1)}
+}
+@keyframes success-glow{
+  0%,100%{ text-shadow:none }
+  50%{ text-shadow:0 0 15px rgba(255,220,0,.9), 0 0 30px rgba(255,220,0,1) }
+}
+
+/* 五彩紙屑 */
+.confetti{ position:absolute; width:10px; height:16px; opacity:.95; top:-20px; left:0; }
+@keyframes confetti-fall{ to { transform: translateY(120vh) rotate(720deg); } }
+
+/* QR 視窗 */
+.modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.55); z-index:50; padding:16px; }
+.modal.show{ display:flex; }
+.modal-card{ width:min(90vw,420px); background:#fff; color:#111; border-radius:18px; padding:20px; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,.35); }
+.modal-card h3{ margin:0 0 8px; font-size:22px }
+.modal-card p{ margin:0 0 14px; opacity:.85 }
+.qr{ width:100%; max-width:320px; aspect-ratio:1/1; object-fit:contain; display:block; margin:0 auto 10px; }
+.close{ margin-top:8px; background:var(--brand); color:#111; font-weight:900; border:0; border-radius:12px; padding:10px 16px; cursor:pointer; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img src="logo.png" alt="活動LOGO" class="logo">
+
+    <!-- 盛大進球效果層 -->
+    <div class="flash" id="flash"></div>
+    <div class="goal-banner" id="banner">
+      GOAL!!
+      <span class="success">挑戰成功！</span>
+    </div>
+
+    <!-- 球門 + 足球 -->
+    <div class="stadium">
+      <svg class="goal" viewBox="0 0 640 220" aria-hidden="true">
+        <defs><pattern id="net" width="16" height="16" patternUnits="userSpaceOnUse">
+          <path d="M0 8 H16 M8 0 V16" stroke="rgba(255,255,255,.35)" stroke-width="1"/>
+        </pattern></defs>
+        <rect x="60" y="24" width="520" height="160" fill="url(#net)" stroke="rgba(255,255,255,.6)" stroke-width="6" rx="8"/>
+        <rect x="40" y="12" width="560" height="188" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="10" rx="14"/>
+      </svg>
+      <div class="ball" id="ball" aria-hidden="true"><img src="soccer.png" alt="soccer ball"/></div>
+    </div>
+
+    <h1>五秒GOAL挑戰</h1>
+    <p class="sub">計時中足球會左右移動；<b>整數秒=5</b> 就算進球。</p>
+
+    <!-- 計時顯示（秒：百分秒） -->
+    <div class="board"><div id="timer" class="digits">00:00</div></div>
+
+    <div class="actions"><button class="btn" id="startBtn">開始</button></div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <!-- QR 視窗（IG 文案；外部圖失敗時改用 qrcode.png） -->
+  <div class="modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+    <div class="modal-card">
+      <h3 id="qrTitle">歡迎追蹤 ABC-MART 官方 IG！</h3>
+      <p>掃描下方 QR Code 看更多活動與最新消息 👟</p>
+      <a href="https://www.qrcode-tiger.com" target="_blank" rel="noopener">
+        <img class="qr" src="https://qrtiger.com/temp/1761104055255.png"
+             alt="官方 IG QR Code"
+             onerror="this.onerror=null; this.src='qrcode.png';" />
+      </a>
+      <button class="close" id="closeQr">我已掃描</button>
+    </div>
+  </div>
+
+  <!-- 進球音效（AAC 或 M4A 皆可） -->
+  <audio id="goalSound" src="goal.aac" preload="auto"></audio>
+
+<script>
+(() => {
+  const timerEl  = document.getElementById('timer');
+  const startBtn = document.getElementById('startBtn');
+  const resultEl = document.getElementById('result');
+  const ballEl   = document.getElementById('ball');
+  const flashEl  = document.getElementById('flash');
+  const bannerEl = document.getElementById('banner');
+  const qrModal  = document.getElementById('qrModal');
+  const closeQr  = document.getElementById('closeQr');
+  const goalSound= document.getElementById('goalSound');
+
+  // 場控參數：QR 延後 2 秒出現
+  const CFG = {
+    QR_DELAY_MS: 2000,
+    CONFETTI_COUNT: 220,
+    CONFETTI_MIN_DUR: 1.8,
+    CONFETTI_MAX_DUR: 3.0
+  };
+
+  let startTime = 0, raf = 0, running = false;
+
+  // 顯示：秒:百分秒（00:00）
+  function fmtSSCC(ms){
+    const t = ms / 1000;
+    const s  = Math.floor(t);
+    const cs = Math.floor((t - s) * 100); // 0~99
+    const pad2 = n => n.toString().padStart(2,'0');
+    return `${pad2(s)}:${pad2(cs)}`;
+  }
+
+  function tick(){
+    if(!running) return;
+    const elapsedMs = performance.now() - startTime;
+    timerEl.textContent = fmtSSCC(elapsedMs);
+    raf = requestAnimationFrame(tick);
+  }
+
+  function start(){
+    resultEl.textContent = '';
+    ballEl.classList.remove('scored','saved');
+    flashEl.classList.remove('show');
+    bannerEl.classList.remove('show');
+    clearConfetti();
+
+    startTime = performance.now();
+    running = true;
+    startBtn.textContent = '停！';
+    timerEl.textContent = '00:00';
+    ballEl.classList.add('running');
+    raf = requestAnimationFrame(tick);
+  }
+
+  function stop(){
+    if(!running) return;
+    cancelAnimationFrame(raf);
+    running = false;
+
+    const elapsed = (performance.now() - startTime) / 1000;
+    timerEl.textContent = fmtSSCC(elapsed * 1000);
+    ballEl.classList.remove('running');
+
+    const secInt = Math.floor(elapsed); // 整數秒
+    if (secInt === 5){
+      resultEl.innerHTML = 'GOAL!! 五秒命中 🎉<br><span class="success-text" style="display:block;color:#ffeb3b;font-size:clamp(28px,6vw,44px);text-shadow:0 0 14px rgba(255,235,59,.95),0 0 36px rgba(255,235,59,.95);font-weight:900;animation:success-pop .9s both, success-glow 1.6s ease-in-out 1.2s 3;">挑戰成功！</span>';
+      ballEl.classList.add('scored');
+      flashEl.classList.add('show');
+      bannerEl.classList.add('show');
+      goalSound.currentTime = 0;
+      goalSound.play().catch(()=>{});
+      launchConfetti();
+      setTimeout(()=> qrModal.classList.add('show'), CFG.QR_DELAY_MS);
+    } else if (secInt < 5){
+      resultEl.textContent = '太早出腳！再抓一下節奏～';
+      ballEl.classList.add('saved');
+    } else {
+      resultEl.textContent = '太晚了！差一點點～';
+      ballEl.classList.add('saved');
+    }
+    startBtn.textContent = '再挑戰一次';
+  }
+
+  // —— 彩帶效果 —— //
+  function launchConfetti(){
+    const colors = ['#ffd700','#ff6b6b','#4cd964','#5ac8fa','#ff9f0a','#af52de','#ff3b30'];
+    for(let i=0;i<CFG.CONFETTI_COUNT;i++){
+      const s = document.createElement('div');
+      s.className = 'confetti';
+      s.style.left = Math.random()*100 + 'vw';
+      s.style.background = colors[i % colors.length];
+      s.style.transform = `translateY(-100px) rotate(${Math.random()*360}deg)`;
+      const dur = CFG.CONFETTI_MIN_DUR + Math.random()*(CFG.CONFETTI_MAX_DUR - CFG.CONFETTI_MIN_DUR);
+      s.style.animation = `confetti-fall ${dur}s linear forwards`;
+      s.style.opacity = 0.8 + Math.random()*0.2;
+      s.style.width  = (8  + Math.random()*6)  + 'px';
+      s.style.height = (12 + Math.random()*10) + 'px';
+      document.body.appendChild(s);
+      setTimeout(()=> s.remove(), dur*1000 + 400);
+    }
+  }
+  function clearConfetti(){ document.querySelectorAll('.confetti').forEach(el=>el.remove()); }
+
+  // 綁定事件
+  function bind(el, fn){ ['click','touchstart'].forEach(ev=>el.addEventListener(ev, fn, {passive:true})) }
+  bind(startBtn, () => running ? stop() : start());
+  bind(closeQr, () => qrModal.classList.remove('show'));
+  qrModal.addEventListener('click', (e)=>{ if(e.target === qrModal) qrModal.classList.remove('show'); });
+})();
+</script>
+</body>
+</html>
