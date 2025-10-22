@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-<title>五秒GOAL挑戰｜秒:百分秒</title>
+<title>五秒GOAL挑戰｜長按到 5 秒放開</title>
 <style>
 :root{
   --grass1:#0f8a3b; --grass2:#0c6f31; --brand:#ffcc00;
   --digit:#ff3b30; --digitGlow:rgba(255,80,60,.55);
-  --ball-speed: 1.8s;      /* 足球左右移動速度 */
-  --ball-amplitude: 280px; /* 左右移動幅度 */
+  --ball-speed: 2.0s;      /* 足球左右移動速度 */
+  --ball-amplitude: 240px; /* 左右移動幅度 */
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
@@ -22,7 +22,7 @@ body{
 .card{
   width:min(92vw,720px); padding:24px 20px 32px; border-radius:22px;
   background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.08));
-  border:1px solid rgba(255,255,255,.28); backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.28);
   box-shadow:0 18px 38px rgba(0,0,0,.28); text-align:center; position:relative; overflow:hidden;
 }
 .logo{ width:clamp(120px,28%,220px); display:block; margin:0 auto 16px; filter:drop-shadow(0 0 4px rgba(0,0,0,.35)); }
@@ -43,7 +43,7 @@ body{
   100% { transform: translateX(calc(-50% + var(--ball-amplitude))); }
 }
 
-/* 進球/撲救（停表後用） */
+/* 進球/撲救（放開後用） */
 .ball.scored{ animation: kick 900ms cubic-bezier(.2,.7,.2,1) forwards }
 @keyframes kick{
   0%{ transform:translate(-50%,0) scale(1) }
@@ -72,13 +72,16 @@ body{
   font-size: clamp(48px, 12vw, 100px); line-height:1;
 }
 
-/* 按鈕與提示 */
+/* 長按按鈕 */
 .actions{display:flex; justify-content:center; margin:18px 0 6px;}
 .btn{
-  padding:26px 64px; font-size:32px; border-radius:22px; border:0; cursor:pointer; touch-action:manipulation;
+  padding:26px 64px; font-size:32px; border-radius:22px; border:0; cursor:pointer;
   background:linear-gradient(180deg,#ffe169,#ffcc00); color:#111; font-weight:900; letter-spacing:.02em;
   box-shadow:0 8px 0 #b59a00, 0 14px 24px rgba(0,0,0,.35);
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; touch-action:manipulation;
+  transition: transform .06s ease;
 }
+.btn.hold{ transform: scale(0.98); } /* 按住的視覺回饋 */
 .result{min-height:38px; font-weight:800; margin-top:10px}
 
 /* 盛大進球效果：強光 + GOAL 橫幅 + 五彩紙屑 */
@@ -154,16 +157,16 @@ body{
     </div>
 
     <h1>五秒GOAL挑戰</h1>
-    <p class="sub">計時中足球會左右移動；<b>整數秒=5</b> 就算進球。</p>
+    <p class="sub">玩法：<b>按住</b>下方按鈕開始計時，<b>在 5 秒</b>時<b>放開</b>就進球！</p>
 
     <!-- 計時顯示（秒：百分秒） -->
     <div class="board"><div id="timer" class="digits">00:00</div></div>
 
-    <div class="actions"><button class="btn" id="startBtn">開始</button></div>
+    <div class="actions"><button class="btn" id="holdBtn" aria-label="按住開始，放開射門">按住開始，放開射門</button></div>
     <div class="result" id="result"></div>
   </div>
 
-  <!-- QR 視窗（IG 文案；外部圖失敗時改用 qrcode.png） -->
+  <!-- QR 視窗（IG 文案） -->
   <div class="modal" id="qrModal" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
     <div class="modal-card">
       <h3 id="qrTitle">歡迎追蹤 ABC-MART 官方 IG！</h3>
@@ -177,13 +180,13 @@ body{
     </div>
   </div>
 
-  <!-- 進球音效（AAC 或 M4A 皆可） -->
+  <!-- 進球音效 -->
   <audio id="goalSound" src="goal.aac" preload="auto"></audio>
 
 <script>
 (() => {
   const timerEl  = document.getElementById('timer');
-  const startBtn = document.getElementById('startBtn');
+  const holdBtn  = document.getElementById('holdBtn');
   const resultEl = document.getElementById('result');
   const ballEl   = document.getElementById('ball');
   const flashEl  = document.getElementById('flash');
@@ -192,101 +195,101 @@ body{
   const closeQr  = document.getElementById('closeQr');
   const goalSound= document.getElementById('goalSound');
 
-  // 場控參數：QR 延後 2 秒出現
-  const CFG = {
-    QR_DELAY_MS: 2000,
-    CONFETTI_COUNT: 220,
-    CONFETTI_MIN_DUR: 1.8,
-    CONFETTI_MAX_DUR: 3.0
-  };
+  // 避免長按跳出選單 / 長按馬上觸發
+  document.addEventListener('contextmenu', e => e.preventDefault(), {passive:false});
 
-  let startTime = 0, raf = 0, running = false;
+  // 場控：QR 延後 2 秒
+  const CFG = { QR_DELAY_MS: 2000, CONFETTI_COUNT: 160, CONFETTI_MIN_DUR: 1.8, CONFETTI_MAX_DUR: 3.0 };
 
-  // 顯示：秒:百分秒（00:00）
+  let startTime = 0, ticker = 0, running = false;
+
+  // 秒:百分秒
+  const pad2 = n => n.toString().padStart(2,'0');
   function fmtSSCC(ms){
-    const t = ms / 1000;
-    const s  = Math.floor(t);
-    const cs = Math.floor((t - s) * 100); // 0~99
-    const pad2 = n => n.toString().padStart(2,'0');
+    const t = ms/1000, s = Math.floor(t), cs = Math.floor((t - s)*100);
     return `${pad2(s)}:${pad2(cs)}`;
   }
 
-  function tick(){
-    if(!running) return;
-    const elapsedMs = performance.now() - startTime;
-    timerEl.textContent = fmtSSCC(elapsedMs);
-    raf = requestAnimationFrame(tick);
-  }
-
   function start(){
-    resultEl.textContent = '';
-    ballEl.classList.remove('scored','saved');
-    flashEl.classList.remove('show');
-    bannerEl.classList.remove('show');
-    clearConfetti();
-
-    startTime = performance.now();
+    if(running) return;
     running = true;
-    startBtn.textContent = '停！';
+    startTime = performance.now();
+    resultEl.textContent = '';
     timerEl.textContent = '00:00';
+    ballEl.classList.remove('scored','saved');
+    flashEl.classList.remove('show'); bannerEl.classList.remove('show');
+    clearConfetti();
     ballEl.classList.add('running');
-    raf = requestAnimationFrame(tick);
+    holdBtn.classList.add('hold');
+    holdBtn.textContent = '放開射門！';
+    // 輕量更新：每 50ms 更新一次數字，手機更順暢
+    ticker = setInterval(()=>{
+      const elapsedMs = performance.now() - startTime;
+      timerEl.textContent = fmtSSCC(elapsedMs);
+    }, 50);
   }
 
-  function stop(){
+  function stop(byCancel=false){
     if(!running) return;
-    cancelAnimationFrame(raf);
     running = false;
-
-    const elapsed = (performance.now() - startTime) / 1000;
-    timerEl.textContent = fmtSSCC(elapsed * 1000);
+    clearInterval(ticker);
+    const elapsed = (performance.now() - startTime)/1000;
+    timerEl.textContent = fmtSSCC(elapsed*1000);
     ballEl.classList.remove('running');
+    holdBtn.classList.remove('hold');
+    holdBtn.textContent = '按住開始，放開射門';
 
-    const secInt = Math.floor(elapsed); // 整數秒
-    if (secInt === 5){
+    // 若是 pointercancel 等非正常放開也直接結算（你要改成「作廢」也行）
+    const secInt = Math.floor(elapsed);
+    if (!byCancel && secInt === 5){
       resultEl.innerHTML = 'GOAL!! 五秒命中 🎉<br><span class="success-text" style="display:block;color:#ffeb3b;font-size:clamp(28px,6vw,44px);text-shadow:0 0 14px rgba(255,235,59,.95),0 0 36px rgba(255,235,59,.95);font-weight:900;animation:success-pop .9s both, success-glow 1.6s ease-in-out 1.2s 3;">挑戰成功！</span>';
-      ballEl.classList.add('scored');
-      flashEl.classList.add('show');
-      bannerEl.classList.add('show');
-      goalSound.currentTime = 0;
-      goalSound.play().catch(()=>{});
+      ballEl.classList.add('scored'); flashEl.classList.add('show'); bannerEl.classList.add('show');
+      try { goalSound.currentTime = 0; goalSound.play(); } catch(e){}
       launchConfetti();
       setTimeout(()=> qrModal.classList.add('show'), CFG.QR_DELAY_MS);
-    } else if (secInt < 5){
-      resultEl.textContent = '太早出腳！再抓一下節奏～';
+    }else if (secInt < 5){
+      resultEl.textContent = '太早了！再抓一下節奏～';
       ballEl.classList.add('saved');
-    } else {
+    }else{
       resultEl.textContent = '太晚了！差一點點～';
       ballEl.classList.add('saved');
     }
-    startBtn.textContent = '再挑戰一次';
   }
 
-  // —— 彩帶效果 —— //
+  // —— 彩帶 —— //
   function launchConfetti(){
     const colors = ['#ffd700','#ff6b6b','#4cd964','#5ac8fa','#ff9f0a','#af52de','#ff3b30'];
     for(let i=0;i<CFG.CONFETTI_COUNT;i++){
       const s = document.createElement('div');
-      s.className = 'confetti';
+      s.className='confetti';
       s.style.left = Math.random()*100 + 'vw';
       s.style.background = colors[i % colors.length];
       s.style.transform = `translateY(-100px) rotate(${Math.random()*360}deg)`;
       const dur = CFG.CONFETTI_MIN_DUR + Math.random()*(CFG.CONFETTI_MAX_DUR - CFG.CONFETTI_MIN_DUR);
       s.style.animation = `confetti-fall ${dur}s linear forwards`;
       s.style.opacity = 0.8 + Math.random()*0.2;
-      s.style.width  = (8  + Math.random()*6)  + 'px';
+      s.style.width  = (8 + Math.random()*6)  + 'px';
       s.style.height = (12 + Math.random()*10) + 'px';
       document.body.appendChild(s);
       setTimeout(()=> s.remove(), dur*1000 + 400);
     }
   }
-  function clearConfetti(){ document.querySelectorAll('.confetti').forEach(el=>el.remove()); }
+  function clearConfetti(){ document.querySelectorAll('.confetti').forEach(e=>e.remove()); }
 
-  // 綁定事件
-  function bind(el, fn){ ['click','touchstart'].forEach(ev=>el.addEventListener(ev, fn, {passive:true})) }
-  bind(startBtn, () => running ? stop() : start());
-  bind(closeQr, () => qrModal.classList.remove('show'));
-  qrModal.addEventListener('click', (e)=>{ if(e.target === qrModal) qrModal.classList.remove('show'); });
+  // —— 事件：使用 pointer 系列，手機零延遲 —— //
+  holdBtn.addEventListener('pointerdown', e => { e.preventDefault(); start(); }, {passive:false});
+  // 放開、拖出、取消 都視為停止
+  holdBtn.addEventListener('pointerup',   e => { e.preventDefault(); stop(false); }, {passive:false});
+  holdBtn.addEventListener('pointercancel', e => { e.preventDefault(); stop(true); }, {passive:false});
+  holdBtn.addEventListener('pointerleave',  e => { if(running){ e.preventDefault(); stop(false); } }, {passive:false});
+
+  // 鍵盤備援（電腦場控方便）：空白/Enter 長按
+  document.addEventListener('keydown', e => { if((e.code==='Space'||e.key==='Enter')&&!running){ e.preventDefault(); start(); } }, {passive:false});
+  document.addEventListener('keyup',   e => { if(e.code==='Space'||e.key==='Enter'){ e.preventDefault(); stop(false); } }, {passive:false});
+
+  // 關閉 QR
+  closeQr.addEventListener('pointerdown', ()=> qrModal.classList.remove('show'));
+  qrModal.addEventListener('pointerdown', e=>{ if(e.target===qrModal) qrModal.classList.remove('show'); });
 })();
 </script>
 </body>
