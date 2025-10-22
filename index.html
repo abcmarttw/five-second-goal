@@ -13,99 +13,79 @@
   --digitGlow:rgba(255,80,60,.55);
 }
 
-/* 基礎設定 */
-*{box-sizing:border-box;margin:0;padding:0;}
+/* 背景草皮 */
 html,body{
   height:100%;width:100%;
+  margin:0;padding:0;
   background:repeating-linear-gradient(90deg,var(--grass1) 0 14vw,var(--grass2) 14vw 28vw);
   font-family:"Noto Sans TC",system-ui,-apple-system,Segoe UI,Roboto,"PingFang TC",sans-serif;
   color:#fff;
   -webkit-tap-highlight-color:transparent;
   display:flex;align-items:center;justify-content:center;
 }
+
+/* 外框卡 */
 .card{
   width:min(94vw,820px);
-  background:rgba(0,0,0,0.25);
   border-radius:22px;
   border:1px solid rgba(255,255,255,.3);
+  background:rgba(0,0,0,.25);
   box-shadow:0 10px 30px rgba(0,0,0,.4);
   text-align:center;
   position:relative;
   overflow:hidden;
-  padding-bottom:20px;
+  padding:16px 0 24px;
 }
 
-/* LOGO */
-.logo{width:clamp(120px,25%,220px);display:block;margin:20px auto;filter:drop-shadow(0 0 4px rgba(0,0,0,.4));}
+.logo{width:clamp(120px,25%,220px);display:block;margin:10px auto;}
 
-/* 場地區域 */
-.field{
-  position:relative;
-  width:100%;
-  aspect-ratio:16/9;
-  overflow:hidden;
-}
-
-/* 球門 */
+/* 場地 */
+.field{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;}
 .goal-wrap{position:absolute;top:12%;left:50%;transform:translateX(-50%);width:80%;}
 .goal{width:100%;height:auto;display:block;}
 
 /* 守門員 */
 .goalie{
-  position:absolute;
-  left:50%;
-  bottom:28%;
-  width:clamp(80px,10%,120px);
+  position:absolute;left:50%;bottom:30%;width:clamp(80px,10%,120px);
   transform:translateX(-50%);
   animation:goalie-move 2s ease-in-out infinite alternate;
-  animation-play-state:paused;
-  z-index:5;
+  animation-play-state:paused;z-index:3;
 }
-@keyframes goalie-move{
-  0%{transform:translateX(-120px);}
-  100%{transform:translateX(120px);}
-}
+@keyframes goalie-move{0%{transform:translateX(-120px);}100%{transform:translateX(120px);}}
 .goalie.running{animation-play-state:running;}
 
 /* 足球 */
 .ball-track{
-  position:absolute;
-  left:50%;
-  bottom:18%;
-  width:clamp(70px,9%,90px);
+  position:absolute;left:50%;bottom:20%;width:clamp(70px,9%,90px);
   transform:translateX(-50%);
   animation:ball-move 2s linear infinite alternate;
-  animation-play-state:paused;
-  z-index:6;
+  animation-play-state:paused;z-index:2;
 }
-@keyframes ball-move{
-  0%{transform:translateX(-130px);}
-  100%{transform:translateX(130px);}
-}
+@keyframes ball-move{0%{transform:translateX(-130px);}100%{transform:translateX(130px);}}
 .ball-track.running{animation-play-state:running;}
 .ball-sprite img{width:100%;display:block;}
 
-/* 計時區 */
-h2{margin-top:6px;font-size:clamp(22px,5vw,32px);}
-p{font-size:clamp(14px,3.5vw,18px);opacity:.9;}
+/* 文字 */
+h2{margin-top:8px;font-size:clamp(22px,5vw,32px);}
+p{font-size:clamp(14px,3.6vw,18px);opacity:.9;}
+
+/* 計時板 */
 .board{margin:10px auto;width:80%;background:#111;padding:14px;border-radius:12px;}
 .digits{font-family:ui-monospace,monospace;font-size:clamp(48px,12vw,92px);color:var(--digit);text-shadow:0 0 10px var(--digitGlow);}
 
 /* 按鈕 */
-.actions{margin:16px 0;}
+.actions{margin:20px 0;position:relative;z-index:9999;}
 .btn{
-  padding:18px 60px;
-  font-size:clamp(20px,4.5vw,30px);
-  border-radius:18px;
-  border:0;
+  padding:18px 60px;font-size:clamp(22px,5vw,30px);
+  border-radius:18px;border:0;
   background:linear-gradient(180deg,#ffe169,#ffcc00);
   color:#111;font-weight:900;
   box-shadow:0 8px 0 #b59a00,0 14px 24px rgba(0,0,0,.35);
-  cursor:pointer;
+  cursor:pointer;user-select:none;touch-action:manipulation;
   transition:transform .08s ease;
 }
 .btn.hold{transform:scale(.95);}
-.result{min-height:30px;font-weight:800;margin-top:8px;font-size:clamp(14px,3.5vw,18px);}
+.result{min-height:30px;font-weight:800;margin-top:8px;font-size:clamp(14px,3.6vw,18px);}
 
 /* 特效 */
 .flash{position:absolute;inset:-20%;opacity:0;background:radial-gradient(circle at 50% 40%,rgba(255,255,160,.9),rgba(255,255,160,0) 45%);}
@@ -135,7 +115,7 @@ p{font-size:clamp(14px,3.5vw,18px);opacity:.9;}
 <div class="card">
   <img src="logo.png" class="logo" alt="logo">
   <div class="flash" id="flash"></div>
-  <div class="goal-banner" id="banner">GOAL!!<br><span style="color:#ffb700;font-size:1.2em;">挑戰成功！</span></div>
+  <div class="goal-banner" id="banner">GOAL!!<br><span style="color:#ffb700;">挑戰成功！</span></div>
 
   <div class="field">
     <div class="goal-wrap">
@@ -147,7 +127,6 @@ p{font-size:clamp(14px,3.5vw,18px);opacity:.9;}
         <rect x="40" y="12" width="560" height="188" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="10" rx="14"/>
       </svg>
     </div>
-
     <img id="goalie" class="goalie" src="goalie.png" alt="goalie">
     <div id="ballTrack" class="ball-track">
       <div id="ball" class="ball-sprite"><img src="soccer.png" alt="ball"></div>
@@ -224,10 +203,14 @@ p{font-size:clamp(14px,3.5vw,18px);opacity:.9;}
     }
   }
 
-  const startEvts=['pointerdown','touchstart','mousedown'];
-  const endEvts=['pointerup','touchend','mouseup','pointercancel','touchcancel','mouseleave'];
-  startEvts.forEach(evt=>holdBtn.addEventListener(evt,e=>{e.preventDefault();start();},{passive:false}));
-  endEvts.forEach(evt=>holdBtn.addEventListener(evt,e=>{e.preventDefault();stop();},{passive:false}));
+  // ✅ 最保險的多事件綁定：支援 iPhone Safari / Android Chrome
+  ['pointerdown','touchstart','mousedown'].forEach(evt=>{
+    holdBtn.addEventListener(evt,e=>{e.preventDefault();start();},{passive:false});
+  });
+  ['pointerup','touchend','mouseup','pointercancel','touchcancel','mouseleave'].forEach(evt=>{
+    holdBtn.addEventListener(evt,e=>{e.preventDefault();stop();},{passive:false});
+  });
+
   closeQr.addEventListener('click',()=>qrModal.classList.remove('show'));
 })();
 </script>
