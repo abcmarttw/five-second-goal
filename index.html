@@ -361,7 +361,7 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
       await playSfx(goalSound);
 
       // ⬇️ QR 彈出延遲（毫秒）：改這裡
-      setTimeout(()=> qrModal.classList.add('show'), 2000);
+      setTimeout(()=> qrModal.classList.add('show'), 1000);
     }else{
       // 失敗：晃動一下 → 隱藏球 → 播失敗音
       goalieEl.src='goalie_save.png';
@@ -400,3 +400,4 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
 </script>
 </body>
 </html>
+
