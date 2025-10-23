@@ -10,10 +10,10 @@
   --grass1:#0f8a3b; --grass2:#0c6f31;
   --digit:#ff3b30; --digitGlow:rgba(255,80,60,.55);
 
-  /* ⬇️ 這三個參數用來控制“紅框”區域（球移動的範圍） */
-  --zone-top: 42%;      /* 區塊頂端位置（相對 .field 高度） */
-  --zone-width: 84%;    /* 區塊寬度（相對 .field 寬度） */
-  --zone-height: 14%;   /* 區塊高度（相對 .field 高度） */
+  /* 球可移動的“紅框區域”參數（可依需要微調） */
+  --zone-top: 42%;
+  --zone-width: 84%;
+  --zone-height: 14%;
 }
 
 /* 草皮背景 */
@@ -64,7 +64,7 @@ html,body{
 .goalie.running{ animation-play-state:running; }
 .goalie.big{ transform:translateX(-50%) translateY(-5%) scale(1.2); z-index:13; }
 
-/* 🔴 球“紅框”區域（球只在這裡左右移動） */
+/* 球“紅框”區域（球只在這裡左右移動） */
 .ball-zone{
   position:absolute;
   top: var(--zone-top);
@@ -73,26 +73,28 @@ html,body{
   height: var(--zone-height);
   transform: translateX(-50%);
   pointer-events:none;
-  /* 如果要看到實際範圍，用下面一行打開（除錯用）： */
-  /* outline: 3px solid rgba(255,0,0,.6); border-radius:8px; */
+  /* outline: 3px solid rgba(255,0,0,.6); border-radius:8px;  // 除錯用 */
 }
 
-/* 足球（依紅框等比例，左右在紅框內移動） */
+/* 足球（依紅框比例，左右在紅框內移動） */
 .ball-track{
   position:absolute; bottom:0; left:0;
-  height: 100%;                    /* 球高 = 紅框高（你也可改 80%） */
+  height: 100%;
   transform: translateX(0);
   animation: ball-move 2s linear infinite alternate;
   animation-play-state: paused;
-  z-index:20;                      /* 永遠在守門員上層 */
+  z-index:20; /* 永遠在守門員上層 */
 }
 @keyframes ball-move{
   0%   { left: 0%;  }
-  100% { left: 92%; }              /* 92% 讓球不會超出紅框右邊 */
+  100% { left: 92%; }   /* 避免超出紅框右邊 */
 }
 .ball-track.running{ animation-play-state:running; }
 .ball-sprite{ position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center; }
 .ball-sprite img{ height:100%; width:auto; display:block; }
+
+/* 成功後暫時把球藏起來 */
+.ball-hidden{ visibility:hidden; }
 
 /* 文案 */
 h2{ margin-top:8px; font-size:clamp(22px,5vw,32px); }
@@ -134,7 +136,7 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
   100%{opacity:1;transform:translateX(-50%) scale(1)}
 }
 
-/* QR 視窗（z-index 超高，確保不被底下按鈕擋住） */
+/* QR 視窗（z-index 超高） */
 .modal{
   position:fixed; inset:0; display:none;
   align-items:center; justify-content:center;
@@ -171,7 +173,7 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
         <img id="goalie" class="goalie" src="goalie.png" alt="goalie">
       </div>
 
-      <!-- ⬇️ 足球的“紅框區域” -->
+      <!-- 足球的“紅框區域” -->
       <div class="ball-zone">
         <div id="ballTrack" class="ball-track">
           <div id="ball" class="ball-sprite"><img src="soccer.png" alt="ball"></div>
@@ -245,6 +247,7 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
     if(kickAnim){ try{kickAnim.cancel();}catch(e){} kickAnim=null; }
     ballEl.getAnimations().forEach(a=>a.cancel());
     ballEl.style.transform='translate(0,0)';
+    ballEl.classList.remove('ball-hidden');   // 開局顯示球
   }
 
   function start(){
@@ -284,7 +287,8 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
       goalieEl.src='goalie_miss.png';
       goalieEl.classList.add('big');
 
-      await kickToGoal();
+      await kickToGoal();                 // 等球飛進門
+      ballEl.classList.add('ball-hidden');  // ⬅︎ 進球後把球藏起來
 
       flashEl.classList.add('show'); bannerEl.classList.add('show');
       resultEl.innerHTML = 'GOAL!! 三秒命中 🎉<br><span style="color:#ffeb3b;font-weight:900;">挑戰成功！</span>';
