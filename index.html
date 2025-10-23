@@ -11,7 +11,7 @@
   --digit:#ff3b30; --digitGlow:rgba(255,80,60,.55);
 
   /* 球可移動的“紅框區域”參數（可依需要微調） */
-  --zone-top: 42%;
+  --zone-top: 48%;   /* 往下移：原 42% → 48% */
   --zone-width: 84%;
   --zone-height: 14%;
 }
@@ -35,6 +35,15 @@ html,body{
 }
 
 .logo{ width:clamp(120px,25%,220px); display:block; margin:10px auto; }
+
+/* 右上角靜音按鈕 */
+.mute{
+  position:absolute; top:10px; right:12px; z-index:30;
+  background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.7);
+  color:#fff; border-radius:999px; padding:8px 12px; font-weight:800;
+  cursor:pointer; user-select:none; backdrop-filter:blur(3px);
+}
+.mute:active{ transform:scale(.96); }
 
 .field{ position:relative; width:100%; aspect-ratio:16/9; overflow:hidden; }
 
@@ -70,6 +79,7 @@ html,body{
   height: var(--zone-height);
   transform: translateX(-50%);
   pointer-events:none;
+  /* outline: 3px solid rgba(255,0,0,.6); border-radius:8px;  // 除錯用 */
 }
 
 /* 足球（依紅框比例，左右在紅框內移動） */
@@ -153,6 +163,9 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
 <body>
   <div class="card">
     <img src="logo.png" class="logo" alt="logo">
+    <!-- 🔊 靜音按鈕 -->
+    <button id="muteBtn" class="mute" type="button" aria-pressed="false">🔊</button>
+
     <div class="flash" id="flash"></div>
     <div class="goal-banner" id="banner">GOAL!!<br><span style="color:#ffb700;">挑戰成功！</span></div>
 
@@ -203,6 +216,8 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
   </audio>
 
   <audio id="goalSound" src="goal.aac" preload="auto"></audio>
+  <!-- ❌ 新增失敗音效 -->
+  <audio id="failSound" src="fail.aac" preload="auto"></audio>
 
 <script>
 (() => {
@@ -222,10 +237,15 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
 
   const qrModal  = document.getElementById('qrModal');
   const closeQr  = document.getElementById('closeQr');
-  const bgm      = document.getElementById('bgm');
-  const goalSound= document.getElementById('goalSound');
+
+  const bgm       = document.getElementById('bgm');
+  const goalSound = document.getElementById('goalSound');
+  const failSound = document.getElementById('failSound');
+
+  const muteBtn = document.getElementById('muteBtn');
 
   let startTime=0, ticker=0, running=false, goalieSpeedTimer=0, kickAnim=null;
+  let isMuted=false;
 
   const pad2=n=>n.toString().padStart(2,'0');
   const fmtSSCC=ms=>{const t=ms/1000,s=Math.floor(t),cs=Math.floor((t-s)*100);return`${pad2(s)}:${pad2(cs)}`};
@@ -234,13 +254,41 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
   function unlockBgm(){
     if (bgm) {
       bgm.volume = 0.6;
-      bgm.play().catch(()=>{});
+      if(!isMuted) bgm.play().catch(()=>{});
     }
     document.removeEventListener('click', unlockBgm);
     document.removeEventListener('touchstart', unlockBgm);
   }
   document.addEventListener('click', unlockBgm, {once:true});
   document.addEventListener('touchstart', unlockBgm, {once:true});
+
+  // 共同的 SFX 播放（會暫降 BGM 再恢復）
+  async function playSfx(audio){
+    if(!audio) return;
+    audio.currentTime = 0;
+    if(isMuted){ audio.muted = true; }
+    const prevVol = bgm ? bgm.volume : 0.6;
+    if(bgm && !isMuted) bgm.volume = 0.3;
+    try{ await audio.play(); }catch(e){}
+    // 恢復音量（給最長 1.2s）
+    setTimeout(()=>{ if(bgm && !isMuted) bgm.volume = prevVol; }, 1200);
+  }
+
+  // 靜音切換
+  function applyMuteState(){
+    [bgm, goalSound, failSound].forEach(a => { if(a){ a.muted = isMuted; }});
+    muteBtn.textContent = isMuted ? '🔇' : '🔊';
+    muteBtn.setAttribute('aria-pressed', String(isMuted));
+    // 若靜音→直接暫停 BGM；取消靜音→恢復播放
+    if(bgm){
+      if(isMuted){ bgm.pause(); }
+      else{ bgm.play().catch(()=>{}); }
+    }
+  }
+  muteBtn.addEventListener('click', ()=>{
+    isMuted = !isMuted;
+    applyMuteState();
+  });
 
   // 射門：以當前位置 → 球門內部
   function kickToGoal(){
@@ -310,16 +358,12 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
       flashEl.classList.add('show'); bannerEl.classList.add('show');
       resultEl.innerHTML = 'GOAL!! 三秒命中 🎉<br><span style="color:#ffeb3b;font-weight:900;">挑戰成功！</span>';
 
-      // 淡降 BGM 再播進球音效
-      const prevVol = bgm ? bgm.volume : 0.6;
-      if(bgm) bgm.volume = 0.3;
-      try{ goalSound.currentTime=0; await goalSound.play(); }catch(e){}
-      setTimeout(()=>{ if(bgm) bgm.volume = prevVol; }, 1200);
+      await playSfx(goalSound);
 
       // ⬇️ QR 彈出延遲（毫秒）：改這裡
       setTimeout(()=> qrModal.classList.add('show'), 2000);
     }else{
-      // 失敗：晃動一下 → 隱藏球
+      // 失敗：晃動一下 → 隱藏球 → 播失敗音
       goalieEl.src='goalie_save.png';
       goalieEl.classList.remove('big');
       resultEl.textContent = (secInt < TARGET_SEC) ? '太早了！被守門員擋下～' : '太晚了！被守門員收下～';
@@ -335,6 +379,8 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
       );
       await shake.finished.catch(()=>{});
       ballEl.classList.add('ball-hidden');
+
+      await playSfx(failSound);
     }
   }
 
@@ -347,6 +393,9 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
   });
 
   closeQr.addEventListener('click', ()=> qrModal.classList.remove('show'));
+
+  // 初始套用靜音狀態（確保圖示正確）
+  applyMuteState();
 })();
 </script>
 </body>
