@@ -16,7 +16,6 @@
   --zone-height: 14%;
 }
 
-/* 草皮背景 */
 html,body{
   height:100%; width:100%; margin:0; padding:0;
   background:repeating-linear-gradient(90deg,var(--grass1) 0 14vw,var(--grass2) 14vw 28vw);
@@ -25,7 +24,6 @@ html,body{
   display:flex; align-items:center; justify-content:center;
 }
 
-/* 外框 */
 .card{
   width:min(94vw,820px);
   border-radius:22px;
@@ -38,7 +36,6 @@ html,body{
 
 .logo{ width:clamp(120px,25%,220px); display:block; margin:10px auto; }
 
-/* 場地 */
 .field{ position:relative; width:100%; aspect-ratio:16/9; overflow:hidden; }
 
 /* 球門容器（等比例） */
@@ -73,7 +70,6 @@ html,body{
   height: var(--zone-height);
   transform: translateX(-50%);
   pointer-events:none;
-  /* outline: 3px solid rgba(255,0,0,.6); border-radius:8px;  // 除錯用 */
 }
 
 /* 足球（依紅框比例，左右在紅框內移動） */
@@ -93,7 +89,7 @@ html,body{
 .ball-sprite{ position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center; }
 .ball-sprite img{ height:100%; width:auto; display:block; }
 
-/* 成功後暫時把球藏起來 */
+/* 成功/失敗後暫時把球藏起來 */
 .ball-hidden{ visibility:hidden; }
 
 /* 文案 */
@@ -284,21 +280,24 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
     const secInt = Math.floor(elapsed);
 
     if(secInt === TARGET_SEC){
+      // 成功：球飛進門 → 隱藏球
       goalieEl.src='goalie_miss.png';
       goalieEl.classList.add('big');
 
-      await kickToGoal();                 // 等球飛進門
-      ballEl.classList.add('ball-hidden');  // ⬅︎ 進球後把球藏起來
+      await kickToGoal();
+      ballEl.classList.add('ball-hidden');   // 進球後把球藏起來
 
       flashEl.classList.add('show'); bannerEl.classList.add('show');
       resultEl.innerHTML = 'GOAL!! 三秒命中 🎉<br><span style="color:#ffeb3b;font-weight:900;">挑戰成功！</span>';
       try{ goalSound.currentTime=0; goalSound.play(); }catch(e){}
-      setTimeout(()=> qrModal.classList.add('show'), 2000);
+      setTimeout(()=> qrModal.classList.add('show'), 1000);
     }else{
+      // 失敗：晃動一下 → 隱藏球
       goalieEl.src='goalie_save.png';
       goalieEl.classList.remove('big');
       resultEl.textContent = (secInt < TARGET_SEC) ? '太早了！被守門員擋下～' : '太晚了！被守門員收下～';
-      ballEl.animate(
+
+      const shake = ballEl.animate(
         [
           {transform:'translate(0,0)'},
           {transform:'translate(-14px,-6px) rotate(-6deg)'},
@@ -307,10 +306,12 @@ p{  font-size:clamp(14px,3.6vw,18px); opacity:.9; }
         ],
         {duration:420,easing:'ease-in-out'}
       );
+      await shake.finished.catch(()=>{});
+      ballEl.classList.add('ball-hidden');     // 失敗也隱藏球
     }
   }
 
-  /* 多事件綁定：行動裝置最穩 */
+  // 多事件綁定：行動裝置最穩
   ['pointerdown','touchstart','mousedown'].forEach(evt=>{
     holdBtn.addEventListener(evt, e=>{e.preventDefault(); start();}, {passive:false});
   });
